@@ -1,0 +1,152 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Fri May 24 14:51:07 2019
+
+@author: josephcourcelle
+"""
+"""
+un Graphe à n sommets est représenté par une liste de n listes de n entiers qui valent 0 ou 1
+on a G[i][j] == G[j][i] pour tous i,j
+G[i][j] = 0 si i et j ne sont pas voisins
+G[i][j] = 1 si i et j sont voisins
+"""
+
+
+
+import math
+
+
+#fonction qui assure la réfléxivité de la relation représentée par les arrêtes
+def verif(G):
+    for i in range(len(G)):
+        for j in range(len(G)):
+            if G[i][j]==1:
+                G[j][i]=1
+    return G
+
+#fonction qui renvoie les indices des voisins d'un sommet sous forme d'une liste (s est l'indice du sommet)
+def voisins(G,s):
+    res = []
+    for i in range(len(G)):
+        if G[s][i] == 1:
+            res = res + [i]
+    return res
+
+#fonction auxiliaire qui sera appelée dans classe_connexe
+def flag(l,graphe):
+    for X in l:
+        l=l+voisins(graphe,X)
+    return l
+
+#fonction qui renvoie les indices des sommets appartenant à la classe connexe d'un sommet sous forme d'une liste
+def classe_connexe(graphe,s):
+    l=voisins(graphe,s)
+    while l != list(set(flag(l,graphe))):
+        for X in l:
+            l=l+voisins(graphe,X)
+            l=list(set(l))
+    return l
+
+#fonction qui vérifie si deux sommets sont connectés
+def connexesbool(graphe,s1,s2):
+    if s1 in classe_connexe(graphe,s2):
+        return True
+    else:
+        return False
+
+#fonction qui vérifie si un graphe est connexe
+def connexebool(graphe):
+    res = True
+    for s1 in range(len(graphe)):
+        for s2 in range(len(graphe)):
+            if connexesbool(graphe,s1,s2) == False and s1 != s2:
+                res = False
+                break
+    return res      
+
+#fonction qui vérifie si un graphe est complet
+def completbool(graphe):
+    res = True
+    for k in graphe:
+        for l in range(len(graphe)):
+            if graphe[l]!=k and not (l in k):
+                res = False
+                break
+        if res == False:
+            break
+    return res
+
+#coefficients binomiaux
+
+def binom(n,k):
+    if k<=n:
+        return (math.factorial(n))/(math.factorial(n-k)*math.factorial(k))
+    else:
+        return 0
+
+
+#donne l'ecriture binaire d'un entier naturel sous forme d'une liste
+
+def binaire(n):
+    l=[]
+    if n==0:
+        l=[0]
+    else:
+        while n>0:
+            if n%2==0:
+                l.insert(0,0)
+            else:
+                l.insert(0,1)
+            n=n//2
+    return l
+
+#compte le nombre de 1 dans une liste
+    
+def count(l):
+    s=0
+    for i in l:
+        if i==1:
+            s+=1
+    return s
+
+
+    
+#associe a un nombre binaire le graphe de la grille qui lui correspond
+        
+def grid(l):
+    dim=int(math.sqrt(len(l)))
+    g=[]
+    i=0
+    while len(g)!= dim:
+        m=[]
+        for k in range(i,i+dim):
+            m.append(l[k])
+        g.append(m)
+        i=i+dim
+    return g
+
+#COMBIEN Y A T IL DE SOLUTIONS DIFFERENTES POUR UNE GRILLE CARREE DE TAILLE n*n?
+
+dim=input('Quelle est la taille de la grille?\n')
+l=[]
+for k in range(0,2**(dim**2)):
+    b=binaire(k)
+    while len(b)<dim**2:
+        b=[0]+b
+    if count(b) == 2*dim - 1:
+        l.append(b)
+
+
+N=0
+
+for g in l:
+    if connexebool(grid(g)) == True:
+        N=N+1
+print'\nPour une grille de taille '+str(dim)+'x'+str(dim)+' il y a '+str(N)+' solutions différentes'
+
+nb_poss=binom(dim**2,2*dim-1)
+prob=float(N)/float(nb_poss)
+
+print'Et il y a '+str(nb_poss)+' façons de placer '+str(2*dim-1)+' tiges obliques'
+print 'On obtient donc une probabilité de '+str(round(prob,5))+' pour tomber sur une solution'

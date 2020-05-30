@@ -1,0 +1,180 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 30 14:21:05 2020
+
+@author: josephcourcelle
+"""
+
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+import Tkinter
+
+#creation de la premiere fenetre
+app = Tkinter.Tk()
+app.attributes("-topmost", 1)
+app.geometry('500x500')
+
+var_nbver = Tkinter.IntVar()
+var_nbhor = Tkinter.IntVar()
+
+titrenbver = Tkinter.Label(app,text='Nombre de tiges verticales')
+nbver = Tkinter.Scale(app,from_=0,to=25,tickinterval=25,width=60,variable = var_nbver)
+titrenbhor = Tkinter.Label(app,text='Nombre de tiges horizontales')
+nbhor = Tkinter.Scale(app,from_=0,to=25,tickinterval=25,width=60,variable = var_nbhor)
+notice = Tkinter.Label (app,text='Fermer la fenetre pour continuer')
+
+titrenbver.pack()
+nbver.pack()
+titrenbhor.pack()
+nbhor.pack()
+notice.pack()
+
+app.mainloop()
+
+#recuperation des donnees fournies par l'utilisateur
+nbver = var_nbver.get()
+nbhor = var_nbhor.get()
+
+tableau = [[0 for i in range(nbhor)] for j in range(nbver)]
+
+# les 2 couleurs a utiliser
+couleurs = {0: "white", 1: "blue"}
+
+#creation de la deuxieme fenetre
+size = 50
+can_width = nbhor*size + 150
+can_height = nbver*size + 150
+
+w = Tkinter.Tk()
+w.attributes("-topmost", 1)
+
+can = Tkinter.Canvas(w, width=can_width, height=can_height)
+can.pack()
+notice = Tkinter.Label (w,text='Placer les tringles obliques \npuis fermer la fenetre pour continuer')
+notice.pack()
+ 
+#affichage de la grille; 1 element = 1 case; blanc pour 0 et bleu pour 1
+def afficher(t):
+    
+    for j in range(len(t)):
+        for i in range(len(t[j])):
+            can.create_rectangle(i * size,j * size,
+                                 i * size + size,size + j * size,
+                                 fill = couleurs[tableau[j][i]])
+        can.create_text(i*size + size + 75, size + j * size - 25,text='tiges verticales n°'+str(j+1))
+    for k in range(nbhor):
+        can.create_text((size/2) + k * size,(nbver + 1)* size,text='tiges \nhorizon\ntales \nn°'+str(k+1))
+
+#Fonction appelee lors d'un clic sur une case
+def modifierTableau (evt):
+    
+    pos_x = int(evt.x / size)
+    pos_y = int(evt.y / size)
+ 
+    # inverser la valeur de l'element clique
+    if tableau[pos_y][pos_x] == 0:
+        tableau[pos_y][pos_x]  = 1
+    else:
+        tableau[pos_y][pos_x] = 0
+ 
+    # re-afficher le tableau
+    afficher(tableau)
+
+# programme
+afficher(tableau)
+# binding de la fonction modifierTableau sur le canevas
+can.bind("<Button-1>", modifierTableau)
+# boucle principale
+w.mainloop()
+
+
+#   creation du graphe sous forme de liste associe a cette grille sans tiges obliques en faisant figurer d'abord les classes 
+#   connexes des tiges verticales du haut vers le bas puis les classes connexes des tiges horizontales de gauche a droite  
+
+
+graphe = []
+for k in range(nbver + nbhor):
+    graphe.append([0 for i in range(nbver + nbhor)])
+
+#   modification du graphe en tenant compte des tiges obliques
+for j in range(nbver):
+        for i in range(nbhor):
+            if tableau[j][i] == 1:
+                graphe[j][nbver + i] = 1
+                graphe[nbver + i][j] = 1
+
+
+#VERIFICATION DE LA CONNEXITE DU GRAPHE
+
+
+
+#affichage du graphe associe
+
+import pydot
+G=pydot.Dot(graph_type='graph')
+#liste qui contient tous les sommets:
+l=[]
+for k in range(len(graphe)):
+    l=l+[pydot.Node(str(k+1))]
+
+for noeud in l:
+    G.add_node(noeud)
+
+for i in range(len(graphe)):
+    for j in range(len(graphe)):
+        if graphe[i][j]==1 and i<j:
+            G.add_edge(pydot.Edge(l[i],l[j]))
+
+from IPython.display import Image, display
+
+im = Image(G.create_png())
+display(im)
+
+
+
+#fonction qui renvoie les indices des voisins d'un sommet sous forme d'une liste (s est l'indice du sommet)
+def voisins(G,s):
+    res = []
+    for i in range(len(G)):
+        if G[s][i] == 1:
+            res = res + [i]
+    return res
+
+#fonction qui renvoie les indices des sommets appartenant a la classe connexe d'un sommet sous forme d'une liste
+
+def flag(l,graphe):
+    for X in l:
+        l=l+voisins(graphe,X)
+    return l
+def classe_connexe(graphe,s):
+    l=voisins(graphe,s)
+    while l != list(set(flag(l,graphe))):
+        for X in l:
+            l=l+voisins(graphe,X)
+            l=list(set(l))
+    return l
+
+#fonction qui verifie si deux sommets sont connexes
+def connexesbool(graphe,s1,s2):
+    if s1 in classe_connexe(graphe,s2):
+        return True
+    else:
+        return False
+
+#fonction qui verifie si un graphe est connexe
+def connexebool(graphe):
+    res = True
+    for s1 in range(len(graphe)):
+        for s2 in range(len(graphe)):
+            if connexesbool(graphe,s1,s2) == False and s1 != s2:
+                res = False
+                break
+    return res      
+
+
+if connexebool(graphe) == True:
+    print('LA GRILLE OBTENUE EST RIGIDE\nRELANCEZ LE PROGRAMME POUR RECOMMENCER')
+else:
+    print('''LA GRILLE OBTENUE N'EST PAS RIGIDE\nRELANCEZ LE PROGRAMME POUR RECOMMENCER''')
